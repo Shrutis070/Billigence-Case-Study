@@ -3,7 +3,7 @@ title: "Billigence1"
 output:
   pdf_document: default
   html_document: default
-date: "2024-03-17"
+date: "2024-03-20"
 ---
 
 ```{r setup, include=FALSE}
@@ -14,8 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r }
-# install.packages("dyplr")
-# install.packages("mlbench")
+
 library(dplyr)
 library(tidyverse)
 library(lubridate)
@@ -54,9 +53,6 @@ client_df <- client_df %>%
        rename("state" = "y")
 head(client_df)
 
-
-
-
 ```
 
 Here the goal is to determine whether the customer will say yes to deposit. Since the dataset is large I will be focussing majorily on customers who said yes. And try to find any relation or pattern among the customers. So in future the bank could focus on marketing among such customers.
@@ -68,40 +64,7 @@ Here the goal is to determine whether the customer will say yes to deposit. Sinc
 df_state_yes<-filter(client_df,state=="yes")
 head(df_state_yes)
 
-# 
-# # Calculate count by age and state
-# client_count <- client_df %>%
-#   group_by(age, state) %>%
-#   summarize(Count = n())
-# 
-# 
-# # Define custom color palette
-# custom_palette <- c("blue", "red")
-# 
-# # Apply custom theme
-# theme_set(theme_minimal(base_size = 12) +
-#             theme(axis.title.x = element_text(size = 14),
-#                   axis.title.y = element_text(size = 14),
-#                   axis.text.x = element_text(size = 10),
-#                   axis.text.y = element_text(size = 10),
-#                   plot.title = element_text(hjust = 0.5, size = 16),
-#                   legend.position = "bottom"))
-# 
-# # Plot
-# ggplot(data = client_count, aes(x = age, y = Count, color = state, group = state)) +
-#   geom_line(size = 1.2) +
-#   scale_x_continuous(breaks = seq(20, 70, by = 5)) +
-#   scale_color_manual(values = custom_palette, name = "State",
-#                      labels = c("Yes", "No")) +
-#   labs(title = "Relationship between Age and Status",
-#        x = "Age",
-#        y = "Count",
-#        color = "State")
-
-
 ```
-morecritically evaluate the policies and think i through thats why max rejectios and acceptions ijn this area
-According to the graph , majority of the customers who said yes to deposit is of age between 25 and 65.
 
 ```{r}
 
@@ -122,10 +85,6 @@ ggplot(data = client_df, aes(x = state, y = duration, fill = state, colour = sta
 
 ```
 
-The relationship between the duration of call and status for all customers(yes and no) clearly shows no connection between the duration of call and status.
-
-
-
 ```{r}
 
 
@@ -133,14 +92,7 @@ The relationship between the duration of call and status for all customers(yes a
 ggplot(data=client_df, aes(x = state,y= campaign , colour = state)) + 
   geom_bar(stat = "identity")
 
-
-
-
 ```
-This graph shows no positive relation is there between the number of times contacted during this campaign and status.
-
-
-
 
 
 ```{r}
@@ -153,24 +105,45 @@ ggplot(df_state_yes)+
 
 
 ```
-The graph shows that
-
-Single are more likely to say yes to deposit around age 20 to 55
-Married people prefer deposits aged around 25 to 85
-Divorced people prefer deposits aged between late 25 to 65
 
 
 ```{r}
 
 
-#Relationship between Occupation and Status
+
+# Calculate the count of 'yes' status for each occupation
+occupation_counts <- client_df %>%
+  filter(state == 'yes') %>%
+  group_by(job) %>%
+  summarise(YesCount = n()) %>%
+  arrange(YesCount)  # Arrange in descending order of 'yes' count
+
+# Reorder the 'job' variable based on the count of 'yes' status
+client_df$job <- factor(client_df$job, levels = occupation_counts$job)
+
+# Plot the graph with occupations sorted in descending order of 'yes' status
 ggplot(data = client_df) +
-  geom_bar(mapping = aes(x = job, fill = state), color = "blue") +
-  theme(axis.text.x = element_text(angle = 45), legend.position = "bottom") +
-  labs(x = "Occupation", title = "Relationship between Occupation and Status")
+  geom_bar(mapping = aes(y = job, fill = state), color = "blue") +
+  theme(legend.position = "bottom") +
+  labs(x = "Relationship between Occupation and Statu", title = "Occupation")
+
+
+
 ```
 
-The graph shows the occupation of customers who said yes to deposits. According to the data , the customers whose occupation is management related are those who highly prefer deposits, followed by technician, followed by blue collar etc.
+
+```{r}
+
+
+# Plot the graph with occupations sorted in descending order of 'yes' status
+ggplot(data = client_df) +
+  geom_bar(mapping = aes(y = job, fill = state), color = "blue") +  # Swapping x and y
+  theme(axis.text.y = element_text(angle = 45, hjust = 1), legend.position = "bottom") +  # Adjusting y-axis text
+  labs(y = "Occupation", title = "Relationship between Occupation and Status")  # Changing y-axis label
+
+
+```
+
 
 
 ```{r}
@@ -184,10 +157,7 @@ ggplot(data=client_df)+
   labs(title = "Relationship between Education and Status")
 
 
-
-
 ```
-According to the dataset, majority of customers who said yes to deposits are secondary level educated, followed by teritiary.
 
 
 ```{r}
@@ -203,7 +173,6 @@ ggplot(data=client_df)+
 
 ```
 
-According to the dataset, majority of customers who said yes to deposits doesnt have loan.
 
 ```{r}
 
@@ -242,28 +211,91 @@ ggplot(conversionsAgeMarital, aes(x=AgeGroup, y=ConversionRate, fill=Marital)) +
   labs(title="Conversion Rates by Age Group and Marital Status") +
   theme( legend.position = 'bottom')
 
-
-
-
-# Sort the data frame by ConversionRate in descending order
-conversionsAgeMarital <- conversionsAgeMarital[order(-conversionsAgeMarital$ConversionRate), ]
-
-# Print the sorted data frame
-print(conversionsAgeMarital)
-
-# Rename the last groups
-conversionsAgeMarital$AgeGroup <- as.character(conversionsAgeMarital$AgeGroup)
-conversionsAgeMarital$AgeGroup[is.na(conversionsAgeMarital$AgeGroup)] <- "70+"
-
-# Tabulate the sorted data
-kable(conversionsAgeMarital)
-write.csv(conversionsAgeMarital, "conversions_data.csv", row.names = TRUE)
-
-
 ```
+
+
 ```{r}
 
 
+# Filter data for each marital status
+married_data <- conversionsAgeMarital %>% filter(Marital == "married")
+single_data <- conversionsAgeMarital %>% filter(Marital == "single")
+divorced_data <- conversionsAgeMarital %>% filter(Marital == "divorced")
+
+
+
+#MARRIED
+# Sort the data for married individuals by ConversionRate in descending order
+married_data_sorted <- married_data %>%
+  arrange(desc(ConversionRate))
+
+# Reorder levels of AgeGroup based on ConversionRate
+married_data_sorted$AgeGroup <- factor(married_data_sorted$AgeGroup, 
+                                       levels = married_data_sorted$AgeGroup)
+
+# Function to customize theme
+custom_theme <- function() {
+  theme_minimal() +
+  theme(plot.title = element_text(size = 14, face = "bold"),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        legend.position = "bottom")
+}
+
+# Plot for married individuals with reordered levels of AgeGroup
+ggplot(married_data_sorted, aes(x = AgeGroup, y = ConversionRate)) +
+  geom_bar(stat = "identity", fill = "lightblue", width = 0.5) +
+  labs(title = "Conversion Rates by Age Group for Married Individuals") +
+  facet_wrap(~Marital) +
+  custom_theme()
+
+
+
+#SINGLE
+
+# Sort the data for single individuals by ConversionRate in descending order
+single_data_sorted <- single_data %>%
+  arrange(desc(ConversionRate))
+
+# Reorder levels of AgeGroup based on ConversionRate
+single_data_sorted$AgeGroup <- factor(single_data_sorted$AgeGroup, 
+                                       levels = single_data_sorted$AgeGroup)
+
+
+
+# Plot for married individuals with reordered levels of AgeGroup
+ggplot(single_data_sorted, aes(x = AgeGroup, y = ConversionRate)) +
+  geom_bar(stat = "identity", fill = "lightgreen", width = 0.5) +
+  labs(title = "Conversion Rates by Age Group for Single Individuals") +
+  facet_wrap(~Marital) +
+  custom_theme()
+
+
+#DIVORCED
+
+# Sort the data for single individuals by ConversionRate in descending order
+divorced_data_sorted <- divorced_data %>%
+  arrange(desc(ConversionRate))
+
+# Reorder levels of AgeGroup based on ConversionRate
+divorced_data_sorted$AgeGroup <- factor(divorced_data_sorted$AgeGroup, 
+                                       levels = divorced_data_sorted$AgeGroup)
+
+
+
+# Plot for married individuals with reordered levels of AgeGroup
+ggplot(divorced_data_sorted, aes(x = AgeGroup, y = ConversionRate)) +
+  geom_bar(stat = "identity", fill = "salmon", width = 0.5) +
+  labs(title = "Conversion Rates by Age Group for Divorced Individuals") +
+  facet_wrap(~Marital) +
+  custom_theme()
+
+
+```
+
+
+
+```{r}
 
 
 client_df$month <- factor(client_df$month, levels = c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")) # Sort by chronological month order
@@ -276,8 +308,6 @@ month_bar
 
 
 
-
-
 ```
 
 ```{r}
@@ -286,8 +316,6 @@ month_bar
 df_state_yes$month <- factor(df_state_yes$month,levels = c("jan", "feb", "mar", "apr","may", "jun", "jul", "aug","sep", "oct", "nov", "dec")) #sort by chronological month order
 month_bar <- ggplot(df_state_yes, aes(month))
 month_bar + geom_bar(color = "black",fill = "gold") +  theme(text = element_text(size=30), axis.text.x=element_text(angle = 90, vjust = 0.5, hjust=1,size=30))
-
-
 
 
 ```
@@ -304,20 +332,7 @@ month_bar <- ggplot(df_state_no, aes(month))
 month_bar + geom_bar(color = "black",fill = "gold") +  theme(text = element_text(size=30), axis.text.x=element_text(angle = 90, vjust = 0.5, hjust=1,size=30))
 
 
-
-
-
 ```
 
 
-
-
-
-Recommendations
-According to the insights gained from this analysis, bank should put more focus on following categories in future campaigns:
-
-Aged between 25 to 85
-Primary focus on married , followed by young single then divorcee
-Education level: secondary and higher
-Occupation: Management followed by technician,then blue collar , admin.
 
