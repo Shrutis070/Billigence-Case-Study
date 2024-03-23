@@ -1,0 +1,323 @@
+---
+title: "Billigence1"
+output:
+  pdf_document: default
+  html_document: default
+date: "2024-03-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r }
+# install.packages("dyplr")
+# install.packages("mlbench")
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+library(tidyr)
+library(skimr)
+library(ggplot2)
+library(mlbench)
+library(gmodels)
+library(class)
+library(knitr)
+
+
+```
+
+
+```{r}
+
+#reading the client dataset
+client_df<-read.csv("Data.csv")
+
+#checking first 6 entries 
+head(client_df)
+
+#smmarising
+summary(client_df)
+
+
+
+```
+```{r}
+
+#renaming the column "y" to "State" 
+#which describes whether the customer said 'yes' or 'no' to the deposit
+
+client_df <- client_df %>% 
+       rename("state" = "y")
+head(client_df)
+
+
+
+
+```
+
+Here the goal is to determine whether the customer will say yes to deposit. Since the dataset is large I will be focussing majorily on customers who said yes. And try to find any relation or pattern among the customers. So in future the bank could focus on marketing among such customers.
+
+```{r, 'filter'}
+# 
+# #filtering 
+# 
+df_state_yes<-filter(client_df,state=="yes")
+head(df_state_yes)
+
+# 
+# # Calculate count by age and state
+# client_count <- client_df %>%
+#   group_by(age, state) %>%
+#   summarize(Count = n())
+# 
+# 
+# # Define custom color palette
+# custom_palette <- c("blue", "red")
+# 
+# # Apply custom theme
+# theme_set(theme_minimal(base_size = 12) +
+#             theme(axis.title.x = element_text(size = 14),
+#                   axis.title.y = element_text(size = 14),
+#                   axis.text.x = element_text(size = 10),
+#                   axis.text.y = element_text(size = 10),
+#                   plot.title = element_text(hjust = 0.5, size = 16),
+#                   legend.position = "bottom"))
+# 
+# # Plot
+# ggplot(data = client_count, aes(x = age, y = Count, color = state, group = state)) +
+#   geom_line(size = 1.2) +
+#   scale_x_continuous(breaks = seq(20, 70, by = 5)) +
+#   scale_color_manual(values = custom_palette, name = "State",
+#                      labels = c("Yes", "No")) +
+#   labs(title = "Relationship between Age and Status",
+#        x = "Age",
+#        y = "Count",
+#        color = "State")
+
+
+```
+morecritically evaluate the policies and think i through thats why max rejectios and acceptions ijn this area
+According to the graph , majority of the customers who said yes to deposit is of age between 25 and 65.
+
+```{r}
+
+unique(client_df$state)
+
+#remove empty string values form state column
+client_df <- subset(client_df, state != " ")
+
+unique(client_df$state)
+
+
+
+ggplot(data = client_df, aes(x = state, y = duration, fill = state, colour = state)) + 
+  geom_bar(stat = "identity") 
+ 
+
+
+
+```
+
+The relationship between the duration of call and status for all customers(yes and no) clearly shows no connection between the duration of call and status.
+
+
+
+```{r}
+
+
+#Relationship between Campaign and Status
+ggplot(data=client_df, aes(x = state,y= campaign , colour = state)) + 
+  geom_bar(stat = "identity")
+
+
+
+
+```
+This graph shows no positive relation is there between the number of times contacted during this campaign and status.
+
+
+
+
+
+```{r}
+
+#Relationship between Marital status and Age
+
+ggplot(df_state_yes)+
+  geom_point(mapping = aes(x=marital,y=age) ,color="blue")
+
+
+
+```
+The graph shows that
+
+Single are more likely to say yes to deposit around age 20 to 55
+Married people prefer deposits aged around 25 to 85
+Divorced people prefer deposits aged between late 25 to 65
+
+
+```{r}
+
+
+#Relationship between Occupation and Status
+ggplot(data = client_df) +
+  geom_bar(mapping = aes(x = job, fill = state), color = "blue") +
+  theme(axis.text.x = element_text(angle = 45), legend.position = "bottom") +
+  labs(x = "Occupation", title = "Relationship between Occupation and Status")
+```
+
+The graph shows the occupation of customers who said yes to deposits. According to the data , the customers whose occupation is management related are those who highly prefer deposits, followed by technician, followed by blue collar etc.
+
+
+```{r}
+
+
+#Relationship between Education and Status
+
+ggplot(data=client_df)+
+  geom_bar(mapping = aes(x = education,fill=state))+ 
+  theme(axis.text.x = element_text(angle = 45)) +
+  labs(title = "Relationship between Education and Status")
+
+
+
+
+```
+According to the dataset, majority of customers who said yes to deposits are secondary level educated, followed by teritiary.
+
+
+```{r}
+
+#Relationship between Loan and Status
+
+ggplot(data=client_df)+
+  geom_bar(mapping = aes(x = loan,fill=state))+ 
+  labs(title = "Relationship between Loan and Status")
+
+
+
+
+```
+
+According to the dataset, majority of customers who said yes to deposits doesnt have loan.
+
+```{r}
+
+
+day_hist <- ggplot(df_state_yes, aes(day))
+day_hist + geom_area(stat = "bin", color = "black",fill = "slateblue1", alpha = 0.5) + theme(text = element_text(size=30))
+
+
+
+```
+
+```{r}
+
+conversionsAgeMarital <- df_state_yes %>%
+  group_by(AgeGroup = cut(age, breaks = seq(20, 70, by = 10)),
+           Marital = marital) %>%
+  summarize(Count = n(), 
+            NumConversions = sum(ifelse(state == "yes", 1, 0))) %>%
+  mutate(TotalCount = sum(Count),
+         ConversionRate = NumConversions / TotalCount * 100)
+
+# Print the intermediate steps to debug
+print(conversionsAgeMarital)
+
+kable(conversionsAgeMarital)
+
+
+
+#rename the last groups
+conversionsAgeMarital$AgeGroup <- as.character(conversionsAgeMarital$AgeGroup)
+conversionsAgeMarital$AgeGroup[is.na(conversionsAgeMarital$AgeGroup)] <- "70+"
+
+#visualizing conversions by age group and marital status
+ggplot(conversionsAgeMarital, aes(x=AgeGroup, y=ConversionRate, fill=Marital)) +
+  geom_bar(width=0.5, stat = "identity") +
+  labs(title="Conversion Rates by Age Group and Marital Status") +
+  theme( legend.position = 'bottom')
+
+
+
+
+# Sort the data frame by ConversionRate in descending order
+conversionsAgeMarital <- conversionsAgeMarital[order(-conversionsAgeMarital$ConversionRate), ]
+
+# Print the sorted data frame
+print(conversionsAgeMarital)
+
+# Rename the last groups
+conversionsAgeMarital$AgeGroup <- as.character(conversionsAgeMarital$AgeGroup)
+conversionsAgeMarital$AgeGroup[is.na(conversionsAgeMarital$AgeGroup)] <- "70+"
+
+# Tabulate the sorted data
+kable(conversionsAgeMarital)
+write.csv(conversionsAgeMarital, "conversions_data.csv", row.names = TRUE)
+
+
+```
+```{r}
+
+
+
+
+client_df$month <- factor(client_df$month, levels = c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")) # Sort by chronological month order
+
+month_bar <- ggplot(client_df, aes(month, fill = state)) +
+  geom_bar(color = "black") + 
+  theme(text = element_text(size = 30), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 30))
+
+month_bar
+
+
+
+
+
+```
+
+```{r}
+
+
+df_state_yes$month <- factor(df_state_yes$month,levels = c("jan", "feb", "mar", "apr","may", "jun", "jul", "aug","sep", "oct", "nov", "dec")) #sort by chronological month order
+month_bar <- ggplot(df_state_yes, aes(month))
+month_bar + geom_bar(color = "black",fill = "gold") +  theme(text = element_text(size=30), axis.text.x=element_text(angle = 90, vjust = 0.5, hjust=1,size=30))
+
+
+
+
+```
+
+```{r}
+
+
+df_state_no <- filter(client_df,state=="no")
+head(df_state_no)
+
+
+df_state_no$month <- factor(df_state_no$month,levels = c("jan", "feb", "mar", "apr","may", "jun", "jul", "aug","sep", "oct", "nov", "dec")) #sort by chronological month order
+month_bar <- ggplot(df_state_no, aes(month))
+month_bar + geom_bar(color = "black",fill = "gold") +  theme(text = element_text(size=30), axis.text.x=element_text(angle = 90, vjust = 0.5, hjust=1,size=30))
+
+
+
+
+
+```
+
+
+
+
+
+Recommendations
+According to the insights gained from this analysis, bank should put more focus on following categories in future campaigns:
+
+Aged between 25 to 85
+Primary focus on married , followed by young single then divorcee
+Education level: secondary and higher
+Occupation: Management followed by technician,then blue collar , admin.
+
